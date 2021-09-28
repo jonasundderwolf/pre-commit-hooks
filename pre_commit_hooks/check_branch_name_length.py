@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import argparse
 
 from pre_commit_hooks.util import CalledProcessError
@@ -22,26 +20,36 @@ def main(argv=None):
         help='Subdomain of review app without branch name. '
              'Example: .subdomain.domain.de',
     )
+    parser.add_argument(
+        '-m', '--max', type=int,
+        help='Maximum branch name length (mutually exclusive with -s)',
+    )
+    parser.add_argument(
+        '--max-length-with-suffix', type=int, default=64,
+        help='Maximum branch name length including suffix, default 64',
+    )
     args = parser.parse_args(argv)
 
-    if not args.subdomain:
-        print('Please specify a subdomain with -s.')
+    if not bool(args.subdomain) ^ bool(args.max):
+        print('Please specify a subdomain with -s OR a maximum branch length with -m')
         return 1
 
     branch_name = get_branch_name()
 
-    if branch_name:
-        common_name_length = len(branch_name) + len(args.subdomain)
-        if common_name_length <= 64:
-            return 0
-        else:
-            print('The commonName is too long. '
-                  '({}.{} > 64 chars). Please make your branch name '
-                  'shorter.'.format(branch_name, args.subdomain))
-            return 1
-
-    else:
+    if not branch_name:
+        print('Can\'t get branch name from git. Are you in a git-tracked repository? Not in detached head?')
         return 1
+    if args.max:
+        if len(branch_name) <= args.max:
+            return 0
+        print(f'The branch name {branch_name} is longer as the allowed {args.max} length.')
+        return 1
+    if len(branch_name) + len(args.subdomain) <= args.max_length_with_suffix:
+        return 0
+    print('The commonName is too long. '
+          f'({branch_name}.{args.subdomain} > {args.max_length_with_suffix} chars). '
+          'Please make your branch name shorter.')
+    return 1
 
 
 if __name__ == '__main__':

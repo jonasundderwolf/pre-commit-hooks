@@ -1,0 +1,6 @@
+- id: check-branch-name-length
+  name: Check for length of branch name
+  description: "This hook checks if a branch name has a specific length. You need to specify the subdomain of the review app without the branch name. Example: -s=.subdomain.domain.de"
+  entry: check-branch-name-length
+  language: python
+  pass_filenames: false
